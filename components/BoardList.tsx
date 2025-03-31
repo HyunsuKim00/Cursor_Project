@@ -2,58 +2,213 @@
 
 import Link from 'next/link'
 import { HeartIcon, MagnifyingGlassIcon, PencilSquareIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
-import { useState } from 'react'
+import { StarIcon as StarOutline } from '@heroicons/react/24/outline'
+import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
+import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
+import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
+import { useState, useEffect } from 'react'
 import { Pagination } from './Pagination'
-import { posts } from '@/data/posts'
+import { BoardListProps, Post } from '@/types/interfaces'
 
 const POSTS_PER_PAGE = 5
 
-interface BoardListProps {
-  filter?: 'hot' | 'best'
-}
-
 type SortOption = 'date' | 'likes'
+
+interface PostData {
+  id: number;
+  title: string;
+  author: string;
+  authorId: string;
+  date: string;
+  likes: number;
+  category: string;
+  commentsCount: number;
+  isScraped?: boolean;
+  isLiked?: boolean;
+}
 
 export function BoardList({ filter }: BoardListProps = {}) {
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<SortOption>('date')
+  const [scrapedPosts, setScrapedPosts] = useState<Set<number>>(new Set())
+  const [likedPosts, setLikedPosts] = useState<Set<number>>(new Set())
+  const [posts, setPosts] = useState<PostData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // 게시글 필터링
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        setIsLoading(true);
+        
+        const queryParams = new URLSearchParams();
+        if (filter) {
+          queryParams.append('filter', filter);
+        }
+        
+        const response = await fetch(`/api/posts?${queryParams.toString()}`);
+        
+        if (!response.ok) {
+          throw new Error('게시글을 불러오는데 실패했습니다.');
+        }
+        
+        const data = await response.json();
+        setPosts(data);
+        
+        // 스크랩된 게시글 설정
+        const scraped = new Set<number>();
+        const liked = new Set<number>();
+        
+        data.forEach((post: PostData) => {
+          if (post.isScraped) {
+            scraped.add(post.id);
+          }
+          if (post.isLiked) {
+            liked.add(post.id);
+          }
+        });
+        
+        setScrapedPosts(scraped);
+        setLikedPosts(liked);
+        
+      } catch (err) {
+        console.error('게시글 로딩 오류:', err);
+        setError(err instanceof Error ? err.message : '게시글을 불러오는데 실패했습니다.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchPosts();
+  }, [filter]);
+
+  const handleScrap = async (e: React.MouseEvent, postId: number) => {
+    e.preventDefault(); // 링크 이동 방지
+    
+    try {
+      const isCurrentlyScraped = scrapedPosts.has(postId);
+      const action = isCurrentlyScraped ? 'unscrap' : 'scrap';
+      
+      const response = await fetch('/api/posts/scrap', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId, action }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('스크랩 처리에 실패했습니다.');
+      }
+      
+      setScrapedPosts(prev => {
+        const newScraped = new Set(prev);
+        if (newScraped.has(postId)) {
+          newScraped.delete(postId);
+        } else {
+          newScraped.add(postId);
+        }
+        return newScraped;
+      });
+      
+    } catch (err) {
+      console.error('스크랩 처리 오류:', err);
+      alert('스크랩 처리 중 오류가 발생했습니다.');
+    }
+  };
+  
+  const handleLike = async (e: React.MouseEvent, postId: number) => {
+    e.preventDefault(); // 링크 이동 방지
+    
+    try {
+      const isCurrentlyLiked = likedPosts.has(postId);
+      const action = isCurrentlyLiked ? 'unlike' : 'like';
+      
+      const response = await fetch('/api/posts/like', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ postId, action }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('좋아요 처리에 실패했습니다.');
+      }
+      
+      // 좋아요 상태 업데이트
+      setLikedPosts(prev => {
+        const newLiked = new Set(prev);
+        if (newLiked.has(postId)) {
+          newLiked.delete(postId);
+        } else {
+          newLiked.add(postId);
+        }
+        return newLiked;
+      });
+      
+      // 게시글 목록에서 좋아요 수 업데이트
+      setPosts(prev => 
+        prev.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              likes: isCurrentlyLiked ? post.likes - 1 : post.likes + 1
+            };
+          }
+          return post;
+        })
+      );
+      
+    } catch (err) {
+      console.error('좋아요 처리 오류:', err);
+      alert('좋아요 처리 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 게시글 필터링 (검색)
   let filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  // HOT 게시판 필터링 (좋아요 10개 이상)
-  if (filter === 'hot') {
-    filteredPosts = filteredPosts.filter(post => post.likes >= 10)
-  }
-  // BEST 게시판 필터링 (좋아요 100개 이상)
-  else if (filter === 'best') {
-    filteredPosts = filteredPosts.filter(post => post.likes >= 100)
-  }
+  );
 
   // 게시글 정렬
   filteredPosts.sort((a, b) => {
     if (sortBy === 'date') {
-      return new Date(b.date).getTime() - new Date(a.date).getTime()
+      return new Date(b.date).getTime() - new Date(a.date).getTime();
     } else {
-      return b.likes - a.likes
+      return b.likes - a.likes;
     }
-  })
+  });
 
-  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE)
-  const startIndex = (currentPage - 1) * POSTS_PER_PAGE
-  const paginatedPosts = filteredPosts.slice(startIndex, startIndex + POSTS_PER_PAGE)
+  const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
+  const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
+  const paginatedPosts = filteredPosts.slice(startIndex, startIndex + POSTS_PER_PAGE);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(e.target.value as SortOption)
-    setCurrentPage(1) // 정렬 변경 시 첫 페이지로 이동
+    setSortBy(e.target.value as SortOption);
+    setCurrentPage(1); // 정렬 변경 시 첫 페이지로 이동
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white shadow-sm rounded-lg overflow-hidden p-8 text-center">
+        <p className="text-gray-500">게시글을 불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-white shadow-sm rounded-lg overflow-hidden p-8 text-center">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
   }
 
   return (
@@ -82,8 +237,8 @@ export function BoardList({ filter }: BoardListProps = {}) {
               placeholder="제목 또는 작성자로 검색"
               value={searchQuery}
               onChange={(e) => {
-                setSearchQuery(e.target.value)
-                setCurrentPage(1) // 검색 시 첫 페이지로 이동
+                setSearchQuery(e.target.value);
+                setCurrentPage(1); // 검색 시 첫 페이지로 이동
               }}
               className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
@@ -113,15 +268,36 @@ export function BoardList({ filter }: BoardListProps = {}) {
                   <div className="flex items-center space-x-2 text-sm text-gray-500">
                     <span>{post.author}</span>
                     <span>•</span>
-                    <span>{post.date}</span>
-                    <div className="flex items-center space-x-1">
-                      <HeartIcon className="h-4 w-4" />
-                      <span>{post.likes}</span>
-                    </div>
-                    <span>•</span>
-                    <div className="flex items-center space-x-1">
-                      <ChatBubbleLeftIcon className="h-4 w-4" />
-                      <span>{post.comments.length}</span>
+                    <span>{new Date(post.date).toLocaleDateString()}</span>
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={(e) => handleLike(e, post.id)}
+                        className="flex items-center space-x-1 text-gray-500 hover:text-red-500 transition-colors"
+                        title="좋아요"
+                      >
+                        {likedPosts.has(post.id) ? (
+                          <HeartSolid className="h-4 w-4 text-red-500" />
+                        ) : (
+                          <HeartOutline className="h-4 w-4" />
+                        )}
+                        <span>{post.likes}</span>
+                      </button>
+                      <button
+                        onClick={(e) => handleScrap(e, post.id)}
+                        className="flex items-center space-x-1 text-gray-500 hover:text-yellow-500 transition-colors"
+                        title="스크랩"
+                      >
+                        {scrapedPosts.has(post.id) ? (
+                          <StarSolid className="h-4 w-4 text-yellow-500" />
+                        ) : (
+                          <StarOutline className="h-4 w-4" />
+                        )}
+                      </button>
+                      <span>•</span>
+                      <div className="flex items-center space-x-1">
+                        <ChatBubbleLeftIcon className="h-4 w-4" />
+                        <span>{post.commentsCount}</span>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -1,12 +1,7 @@
 'use client'
 
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-
-interface PaginationProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-}
+import { PaginationProps } from '@/types/interfaces'
 
 export function Pagination({ currentPage, totalPages, onPageChange }: PaginationProps) {
   const pages = Array.from({ length: totalPages }, (_, i) => i + 1)

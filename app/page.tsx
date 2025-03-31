@@ -3,8 +3,8 @@
 import { BoardList } from '@/components/BoardList'
 import { Navigation } from '@/components/Navigation'
 import { SignInButton, SignUpButton, SignedIn, SignedOut, useAuth, useClerk } from '@clerk/nextjs'
-import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function Home() {
   const { isLoaded, isSignedIn } = useAuth()
@@ -22,36 +22,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">학교 게시판</h1>
-          <div className="flex items-center">
-            <a
-              href="https://hisnet.handong.edu/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-medium text-gray-700 hover:text-blue-500 transition-colors"
-            >
-              학교 홈페이지
-            </a>
-            <span className="mx-4 text-gray-300">|</span>
-            <SignedIn>
-              <a
-                href="/account"
-                className="text-sm font-medium text-gray-700 hover:text-blue-500 transition-colors"
-              >
-                My Account
-              </a>
-              <span className="mx-4 text-gray-300">|</span>
-              <button
-                onClick={handleSignOut}
-                className="text-sm font-medium text-gray-700 hover:text-blue-500 transition-colors"
-              >
-                로그아웃
-              </button>
-            </SignedIn>
-          </div>
-        </div>
-
         <SignedIn>
           <Navigation />
           <div className="mt-8">
