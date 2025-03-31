@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     const supabaseAdmin = createSupabaseAdmin();
     
     // 사용자 데이터 조회 (username 가져오기)
+    // eslint-disable-next-line prefer-const
     let { data: userData, error: userDataError } = await supabase
       .from('users')
       .select('username')

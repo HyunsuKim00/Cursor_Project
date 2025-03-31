@@ -1,25 +1,41 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import { PostForm } from '@/components/PostForm'
 import { useRouter } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
-import { Post, PageParams } from '@/types/interfaces'
+import { Post, PromisePageParams } from '@/types/interfaces'
 
-export default function EditPost({ params }: { params: Promise<PageParams> }) {
+export default function EditPost({ params }: { params: PromisePageParams }) {
   const router = useRouter()
   const { user, isLoaded } = useUser()
-  const unwrappedParams = use(params)
-  const postId = parseInt(unwrappedParams.id)
   const [post, setPost] = useState<Post | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [postId, setPostId] = useState<number | null>(null)
+
+  useEffect(() => {
+    const fetchParams = async () => {
+      try {
+        const resolvedParams = await params;
+        const id = parseInt(resolvedParams.id);
+        setPostId(id);
+      } catch (err) {
+        console.error('params 로딩 오류:', err);
+        setError('게시글 ID를 불러오는데 실패했습니다.');
+      }
+    };
+
+    fetchParams();
+  }, [params]);
 
   useEffect(() => {
     const fetchPost = async () => {
+      if (!postId) return;
+      
       try {
         setIsLoading(true)
         

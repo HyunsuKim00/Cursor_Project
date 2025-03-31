@@ -5,7 +5,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Post, User } from '@/types/interfaces'
 import PostCard from '@/components/PostCard'
-import { ArrowLeftIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
+import {
+  PencilSquareIcon
+} from '@heroicons/react/24/outline'
 
 export default function AccountPage() {
   const { user, isLoaded } = useUser()
@@ -19,9 +21,6 @@ export default function AccountPage() {
   const [isEditingNickname, setIsEditingNickname] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userData, setUserData] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  // 로딩 상태 변수가 정의되었으나, 사용되지 않음.
-  // 로딩 상태 변수를 설정한 이유는?
 
   useEffect(() => {
     if (isLoaded && user) {
@@ -48,7 +47,6 @@ export default function AccountPage() {
       // 사용자 작성 게시물 가져오기
       const fetchUserPosts = async () => {
         try {
-          setIsLoading(true);
           const response = await fetch('/api/posts/my-posts');
           if (response.ok) {
             const data = await response.json();
@@ -69,8 +67,6 @@ export default function AccountPage() {
           }
         } catch (error) {
           console.error('스크랩 게시물 로딩 오류:', error);
-        } finally {
-          setIsLoading(false);
         }
       };
 

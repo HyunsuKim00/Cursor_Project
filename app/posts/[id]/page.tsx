@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import { CommentSection } from '@/components/CommentSection'
 import { HeartIcon as HeartOutlineIcon } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolidIcon } from '@heroicons/react/24/solid'
 import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid'
-import { ArrowLeftIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { SignedIn, SignedOut, SignInButton, SignUpButton, useUser } from '@clerk/nextjs'
-import { PageParams, Comment } from '@/types/interfaces'
+import { PromisePageParams, Comment } from '@/types/interfaces'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import Link from 'next/link'
+import Image from 'next/image'
 
 interface PostData {
   id: number;
@@ -27,25 +28,40 @@ interface PostData {
   comments: Comment[];
 }
 
-export default function PostPage({ params }: { params: Promise<PageParams> }) {
+export default function PostPage({ params }: { params: PromisePageParams }) {
   const router = useRouter();
   const { user } = useUser();
-  const unwrappedParams = use(params);
-  const postId = parseInt(unwrappedParams.id);
   const [post, setPost] = useState<PostData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isScraped, setIsScraped] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
-  const [comments, setComments] = useState<Comment[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [postId, setPostId] = useState<number | null>(null);
 
   // 현재 사용자가 게시물 작성자인지 확인
   const isOwner = user?.id === post?.authorId;
 
   useEffect(() => {
+    const fetchParams = async () => {
+      try {
+        const resolvedParams = await params;
+        const id = parseInt(resolvedParams.id);
+        setPostId(id);
+      } catch (err) {
+        console.error('params 로딩 오류:', err);
+        setError('게시글 ID를 불러오는데 실패했습니다.');
+      }
+    };
+
+    fetchParams();
+  }, [params]);
+
+  useEffect(() => {
     const fetchPostData = async () => {
+      if (!postId) return;
+      
       try {
         setIsLoading(true);
         
@@ -60,7 +76,6 @@ export default function PostPage({ params }: { params: Promise<PageParams> }) {
         
         const data = await response.json();
         setPost(data);
-        setComments(data.comments || []);
         setIsScraped(data.isScraped || false);
         setIsLiked(data.isLiked || false);
         setLikesCount(data.likes || 0);
@@ -257,9 +272,11 @@ export default function PostPage({ params }: { params: Promise<PageParams> }) {
 
                 {post.imageUrl && (
                   <div className="mb-6">
-                    <img
+                    <Image
                       src={post.imageUrl}
                       alt="게시글 이미지"
+                      width={800}
+                      height={450}
                       className="max-w-full h-auto rounded-lg"
                     />
                   </div>

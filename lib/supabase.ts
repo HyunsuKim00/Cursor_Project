@@ -1,4 +1,4 @@
-import { createClientComponentClient, createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 
@@ -14,6 +14,7 @@ export async function createSupabaseClient() {
     cookies: () => ({
       getAll: () => Array.from(cookieStore.getAll() || []),
       get: (name: string) => cookieStore.get(name)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any)
   });
 }

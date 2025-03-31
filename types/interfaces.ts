@@ -38,6 +38,9 @@ export interface PageParams {
   id: string
 }
 
+// Next.js 15용 Promise 타입 추가
+export interface PromisePageParams extends Promise<PageParams> {}
+
 export interface CommentSectionProps {
   postId: number
   comments?: Comment[]
@@ -50,6 +53,7 @@ export interface PostDetailProps {
 
 export interface PostCardProps {
   post: Post
+  isMyPost?: boolean
 }
 
 export interface PaginationProps {

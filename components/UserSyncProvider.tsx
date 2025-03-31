@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 /**
  * 사용자 정보를 Supabase와 동기화하는 컴포넌트
@@ -10,14 +10,7 @@ import { useEffect } from 'react';
 export default function UserSyncProvider() {
   const { isLoaded, isSignedIn, user } = useUser();
 
-  useEffect(() => {
-    // 사용자가 로드되고 로그인되었을 때만 실행
-    if (isLoaded && isSignedIn && user) {
-      syncUserToDB();
-    }
-  }, [isLoaded, isSignedIn, user]);
-
-  const syncUserToDB = async () => {
+  const syncUserToDB = useCallback(async () => {
     try {
       const response = await fetch('/api/users/sync', {
         method: 'POST',
@@ -41,7 +34,14 @@ export default function UserSyncProvider() {
     } catch (error) {
       console.error('사용자 동기화 중 오류 발생:', error);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    // 사용자가 로드되고 로그인되었을 때만 실행
+    if (isLoaded && isSignedIn && user) {
+      syncUserToDB();
+    }
+  }, [isLoaded, isSignedIn, user, syncUserToDB]);
 
   // 이 컴포넌트는 UI를 렌더링하지 않고 백그라운드에서만 작동합니다.
   return null;

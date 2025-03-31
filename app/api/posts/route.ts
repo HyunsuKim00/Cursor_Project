@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/db';
-import { asc, desc, eq, gte, sql, and } from 'drizzle-orm';
+import { desc, eq, gte, sql } from 'drizzle-orm';
 import { posts, users, comments, postLikes, postScraps } from '@/db/schema';
-import { createSupabaseClientAnon } from '@/lib/supabase';
 import { auth } from '@clerk/nextjs/server';
 
 // 게시글 목록 가져오기 API

@@ -5,13 +5,11 @@ import { StarIcon as StarOutline } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { useState } from 'react'
 import { PostCardProps } from '@/types/interfaces'
-import { useUser } from '@clerk/nextjs'
 
-export default function PostCard({ post, isMyPost = false }: PostCardProps & { isMyPost?: boolean }) {
+export default function PostCard({ post, isMyPost }: PostCardProps) {
   const [isScraped, setIsScraped] = useState(post.isScraped || false);
   const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likesCount, setLikesCount] = useState(post.likes || 0);
-  const { user } = useUser();
   
   const handleScrap = async (e: React.MouseEvent) => {
     e.preventDefault(); // 링크 이동 방지
@@ -75,11 +73,11 @@ export default function PostCard({ post, isMyPost = false }: PostCardProps & { i
   
   return (
     <Link href={`/posts/${post.id}`}>
-      <div className="bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.1)] overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)] transition-all duration-300">
+      <div className={`bg-white rounded-lg shadow-[0_4px_12px_rgba(0,0,0,0.1)] overflow-hidden hover:shadow-[0_8px_24px_rgba(0,0,0,0.15)] transition-all duration-300 ${isMyPost ? 'border-l-4 border-blue-500' : ''}`}>
         <div className="p-3 sm:p-4">
           <div className="flex justify-between items-start">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-              {post.title}
+              {post.title} {isMyPost && <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full ml-2">내 글</span>}
             </h2>
             <div className="flex space-x-2">
               <button

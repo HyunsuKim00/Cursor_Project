@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { eq, and } from 'drizzle-orm';
-import { postScraps } from '@/db/schema';
-import { createSupabaseClientAnon } from '@/lib/supabase';
+import { createSupabaseAdmin } from '@/lib/supabase';
 import { auth } from '@clerk/nextjs/server';
 
 // 스크랩 API
@@ -14,63 +11,70 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: '게시글 ID가 필요합니다.' }, { status: 400 });
     }
     
-    // Clerk 인증 정보 확인
+    // 인증 확인
     const authData = await auth();
-    const clerkUserId = authData.userId;
+    const userId = authData.userId;
     
-    if (!clerkUserId) {
-      return NextResponse.json({ error: 'Clerk 인증에 실패했습니다. 로그인 상태를 확인해주세요.' }, { status: 401 });
+    if (!userId) {
+      return NextResponse.json({ error: '로그인이 필요합니다.' }, { status: 401 });
     }
     
-    // Supabase 클라이언트 생성 (익명 접근 - 인증 불필요)
-    const supabase = createSupabaseClientAnon();
+    // Supabase 관리자 권한으로 RLS 우회
+    const supabaseAdmin = createSupabaseAdmin();
     
-    // 사용자 ID는 Clerk에서 가져온 ID 사용
-    const userId = clerkUserId;
+    // 스크랩 액션 확인
+    const isScrapAction = action === 'scrap';
     
-    if (action === 'scrap') {
-      try {
-        // 스크랩 추가
-        await db.insert(postScraps)
-          .values({
-            userId,
-            postId,
-          })
-          .onConflictDoNothing();
+    if (isScrapAction) {
+      // 스크랩 추가
+      const { error: insertError } = await supabaseAdmin
+        .from('post_scraps')
+        .insert({
+          user_id: userId,
+          post_id: postId
+        });
+      
+      if (insertError) {
+        if (insertError.code === '23505') { // 중복 키 오류
+          return NextResponse.json({
+            error: '이미 스크랩한 게시글입니다.',
+            isScraped: true
+          }, { status: 400 });
+        }
         
-        return NextResponse.json({ success: true, action: 'scrap' });
-      } catch (error: any) {
-        console.error('스크랩 추가 오류:', error);
-        return NextResponse.json({ 
-          error: '스크랩 추가 중 오류가 발생했습니다.', 
-          details: error?.message || String(error) 
-        }, { status: 400 });
+        throw insertError;
       }
+      
+      return NextResponse.json({
+        message: '게시글을 스크랩했습니다.',
+        isScraped: true
+      });
+      
     } else {
       // 스크랩 취소
-      try {
-        const result = await db.delete(postScraps)
-          .where(
-            and(
-              eq(postScraps.userId, userId),
-              eq(postScraps.postId, postId)
-            )
-          );
-        
-        return NextResponse.json({ success: true, action: 'unscrap', count: result.count });
-      } catch (error: any) {
-        console.error('스크랩 취소 오류:', error);
-        return NextResponse.json({ 
-          error: '스크랩 취소 중 오류가 발생했습니다.', 
-          details: error?.message || String(error) 
-        }, { status: 500 });
+      const { error: deleteError } = await supabaseAdmin
+        .from('post_scraps')
+        .delete()
+        .match({ user_id: userId, post_id: postId });
+      
+      if (deleteError) {
+        throw deleteError;
       }
+      
+      return NextResponse.json({
+        message: '게시글 스크랩을 취소했습니다.',
+        isScraped: false
+      });
     }
-  } catch (error: any) {
+    
+  } catch (error) {
     console.error('스크랩 처리 오류:', error);
-    return NextResponse.json({ 
-      error: '스크랩 처리 중 오류가 발생했습니다.', 
-      details: error?.stack || error?.message || String(error) 
+    
+    // 타입 가드를 사용하여 any 타입 회피
+    const errorMessage = error instanceof Error ? error.message : '스크랩 처리 중 오류가 발생했습니다.';
+    
+    return NextResponse.json({
+      error: errorMessage
     }, { status: 500 });
   }
 } 

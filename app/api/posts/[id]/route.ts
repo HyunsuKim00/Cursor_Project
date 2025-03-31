@@ -7,12 +7,12 @@ import { auth } from '@clerk/nextjs/server';
 // 특정 게시글 가져오기 API
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // params를 await로 처리
-    const resolvedParams = await params;
-    const postId = Number(resolvedParams.id);
+    const { id } = await params;
+    const postId = Number(id);
     
     if (isNaN(postId)) {
       return NextResponse.json({ error: '유효하지 않은 게시글 ID입니다.' }, { status: 400 });
@@ -141,12 +141,12 @@ export async function GET(
 // 게시글 삭제 API
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // params를 await로 처리
-    const resolvedParams = await params;
-    const postId = Number(resolvedParams.id);
+    const { id } = await params;
+    const postId = Number(id);
     
     if (isNaN(postId)) {
       return NextResponse.json({ error: '유효하지 않은 게시글 ID입니다.' }, { status: 400 });

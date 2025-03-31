@@ -2,18 +2,10 @@
 
 import { BoardList } from '@/components/BoardList'
 import { Navigation } from '@/components/Navigation'
-import { SignInButton, SignUpButton, SignedIn, SignedOut, useAuth, useClerk } from '@clerk/nextjs'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { SignInButton, SignUpButton, SignedIn, SignedOut, useAuth } from '@clerk/nextjs'
 
 export default function Home() {
-  const { isLoaded, isSignedIn } = useAuth()
-  const { signOut } = useClerk()
-  const router = useRouter()
-
-  const handleSignOut = async () => {
-    await signOut()
-  }
+  const { isLoaded } = useAuth()
 
   if (!isLoaded) {
     return null

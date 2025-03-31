@@ -1,24 +1,22 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { posts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 import { auth } from '@clerk/nextjs/server';
 import { createSupabaseAdmin } from '@/lib/supabase';
 
-// 파일명과 경로를 안전하게 만드는 함수 추가
-function sanitizeFileName(name: string): string {
-  // 영문자, 숫자, 일부 특수문자만 허용하고 나머지는 '_'로 대체
-  return name.replace(/[^a-zA-Z0-9-_.]/g, '_');
+// 게시글 업데이트에 사용할 데이터 타입 정의
+interface UpdateData {
+  title: string;
+  content: string;
+  updated_at: string;
 }
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // params 비동기 처리
-    const resolvedParams = await params;
-    const postId = Number(resolvedParams.id);
+    const { id } = await params;
+    const postId = Number(id);
     
     if (isNaN(postId)) {
       return NextResponse.json({ error: '유효하지 않은 게시글 ID입니다.' }, { status: 400 });
@@ -60,7 +58,7 @@ export async function POST(
     }
     
     // 게시글 업데이트 (관리자 클라이언트 사용)
-    const updateData: any = {
+    const updateData: UpdateData = {
       title,
       content,
       updated_at: new Date().toISOString(),

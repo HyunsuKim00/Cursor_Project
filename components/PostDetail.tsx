@@ -6,7 +6,8 @@ import { StarIcon as StarOutlineIcon } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid'
 import { useState } from 'react'
 import { CommentSection } from './CommentSection'
-import { Post, PostDetailProps } from '@/types/interfaces'
+import { PostDetailProps } from '@/types/interfaces'
+import Image from 'next/image'
 
 export function PostDetail({ post }: PostDetailProps) {
   const [likes, setLikes] = useState(post.likes)
@@ -81,9 +82,11 @@ export function PostDetail({ post }: PostDetailProps) {
       <div className="px-6 py-4">
         {post.imageUrl && (
           <div className="mb-6">
-            <img
+            <Image
               src={post.imageUrl}
               alt={post.title}
+              width={800}
+              height={450}
               className="max-w-full h-auto rounded-lg shadow-sm"
             />
           </div>

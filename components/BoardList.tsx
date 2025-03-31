@@ -1,14 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { HeartIcon, MagnifyingGlassIcon, PencilSquareIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
+import { MagnifyingGlassIcon, PencilSquareIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline'
 import { StarIcon as StarOutline } from '@heroicons/react/24/outline'
 import { StarIcon as StarSolid } from '@heroicons/react/24/solid'
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
 import { useState, useEffect } from 'react'
 import { Pagination } from './Pagination'
-import { BoardListProps, Post } from '@/types/interfaces'
+import { BoardListProps } from '@/types/interfaces'
 
 const POSTS_PER_PAGE = 5
 
@@ -168,7 +168,7 @@ export function BoardList({ filter }: BoardListProps = {}) {
   };
 
   // 게시글 필터링 (검색)
-  let filteredPosts = posts.filter(post =>
+  const filteredPosts = posts.filter(post =>
     post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.author.toLowerCase().includes(searchQuery.toLowerCase())
   );
